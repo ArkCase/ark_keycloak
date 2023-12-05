@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ext-{{ .Values.ingressPrefix }}-ingress
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.class }}
+    ingress.kubernetes.io/ssl-redirect: "false"
+{{- if not (.Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress") }}
+{{- end }}
+{{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | squote }}
+{{- end }}
+spec:
+{{- if .Values.tls.enable }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.exthost }}.{{ .Values.ingress.clusterDomainName }}
+    {{- if .Values.openshifttls.enable }}
+    secretName: {{ .Values.tls.secretName }}{{ "-tls" }} 
+    {{- else }}
+    secretName: {{ .Values.tls.secretName }}
+    {{- end}}
+{{- end}}
+  rules:
+{{- if eq .Values.ingress.configureHost true }}  
+  - host: {{ .Values.ingress.exthost }}.{{ .Values.ingress.clusterDomainName }}
+    http:
+{{- else }}
+  - http:
+{{- end }}    
+      paths:
+{{- if .Values.extraPaths }}
+{{ toYaml .Values.extraPaths | indent 6 }}
+{{- end }}
+
+
+    {{- if .Values.jmsBase.enable }}
+    {{ if eq .Values.platform "aws" }}
+      - path: /*
+    {{ else }}
+      - path: /
+    {{ end }}
+    {{- if .Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress" }}
+        pathType: {{ .Values.pathType }}
+        backend:
+          service:
+            name: {{ .Values.jmsBase.serviceName }}
+            port:
+              number: {{ .Values.jmsBase.servicePort }}
+    {{- else }}
+        backend:
+          serviceName: {{ .Values.jmsBase.serviceName }}
+          servicePort: {{ .Values.jmsBase.servicePort }}
+    {{- end }}    
+    {{- end }}
+

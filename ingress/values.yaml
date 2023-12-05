@@ -1,0 +1,23 @@
+platform:
+pathType: Prefix
+ingressPrefix: keycloak
+ingress:   
+  configureHost: true
+  host: iad032-1san04
+  exthost: documentum-k8s1
+  clusterDomainName: appdev.armedia.com
+  class: haproxy
+  annotations: []
+
+jmsBase:
+  enable: true
+  serviceName: keycloak
+  servicePort: 8080
+
+### enable TLS ###
+tls:
+  enable: true
+  secretName: sname-cs-secret-config
+
+openshifttls:
+  enable: false
